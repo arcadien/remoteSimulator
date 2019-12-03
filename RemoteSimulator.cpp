@@ -21,7 +21,7 @@
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 #endif
  
-#define LOW_BATTERY_LEVEL 1300 //mV. Led will flash if battery level is lower than this value
+#define LOW_BATTERY_LEVEL 3*1150 //mV. Led will flash if battery level is lower than this value
 #define WDT_COUNT  225  // wdt is set to 8s, 8x225=1800 seconds = 30 minutes
  
 volatile boolean f_wdt = 0;
