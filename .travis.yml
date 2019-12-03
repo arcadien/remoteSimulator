@@ -1,0 +1,24 @@
+env:
+  global:
+
+language: c++
+dist: bionic
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install -y gcovr lcov cmake gcc-avr binutils-avr avr-libc arduino-core
+
+jobs:
+  include:
+    - stage: "AVR target"
+      name: "AVR target"
+      compiler: avr-gcc
+      script:
+        - mkdir build_avr
+        - cd build_avr
+        - sh ../tools/scripts/init-avr-linux.sh ..
+        - cmake --build .
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
+cache:
+  directories:
+    - $HOME/cache
