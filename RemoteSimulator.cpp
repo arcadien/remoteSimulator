@@ -123,13 +123,12 @@ void setup()
   setup_watchdog(9);
   pinMode(TX_PIN, OUTPUT);
   pinMode(WAKEUP_PIN, INPUT);        // Set the pin to input
-  digitalWrite(WAKEUP_PIN, HIGH);    // Activate internal pullup resistor  
   mySwitch.enableTransmit(TX_PIN);
  
   mySwitch.switchOn('e', 3,2);      // Test Zibase signal id E10
  
   lowBattery =  !(readVcc() >= LOW_BATTERY_LEVEL); // Initialize battery level value
- 
+  
   PCMSK  |= bit (PCINT1);  // set pin change interrupt PB1
   GIFR   |= bit (PCIF);    // clear any outstanding interrupts
   GIMSK  |= bit (PCIE);    // enable pin change interrupts  
@@ -147,7 +146,13 @@ void loop()
   if (f_int) {
     blink(2);
     cli();
-    mySwitch.switchOn('e', 3,2);      // Zibase signal id E10
+	
+	// Only send message if pin is high
+	if(PINB & 0x2)
+	{	
+		mySwitch.switchOn('e', 3,2);      // Zibase signal id E10
+	}
+	
     f_int=false;  // Reset INT Flag
     sei();
   } 
