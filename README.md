@@ -1,5 +1,8 @@
 # Remote Simulator
 
+[![Travis build](https://travis-ci.org/arcadien/remoteSimulator.svg?branch=master)](https://travis-ci.org/arcadien/remoteSimulator)
+[![codecov](https://codecov.io/gh/arcadien/remoteSimulator/branch/master/graph/badge.svg)](https://codecov.io/gh/arcadien/remoteSimulator)
+
 A remote simulator designed for ATTiny85.
 It provides CMake setup and Git submodules to allow compilation outside Arduino IDE.
 
