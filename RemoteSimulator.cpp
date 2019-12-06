@@ -154,7 +154,10 @@ void loop() {
 
     // Only send message if pin is high
     if (PINB & 0x2) {
-      mySwitch.switchOn('e', 3, 2); // Zibase signal id E10
+      // Zibase signal id E10
+      mySwitch.switchOn('e', 3, 2);
+      delay(10);
+      mySwitch.switchOn('e', 3, 2);
     }
 
     f_int = false; // Reset INT Flag
