@@ -131,7 +131,12 @@ target_compile_definitions(${PROJECT_NAME SWITCH_FAMILY=${SWITCH_FAMILY})
 target_compile_definitions(${PROJECT_NAME SWITCH_GROUP=${SWITCH_GROUP})
 target_compile_definitions(${PROJECT_NAME SWITCH_NUMBER=${SWITCH_NUMBER})
 
-add_avr_executable(${PROJECT_NAME} "${CMAKE_SOURCE_DIR}/src/main.cpp")
+add_avr_executable(${PROJECT_NAME} "${CMAKE_SOURCE_DIR}/RemoteSimulator.cpp")
+
+add_definitions(
+  -DSWITCH_FAMILY='${SWITCH_FAMILY}' 
+  -DSWITCH_GROUP=${SWITCH_GROUP} 
+  -DSWITCH_NUMBER=${SWITCH_NUMBER})
 
 avr_target_link_libraries(${PROJECT_NAME} arduino)
 avr_target_link_libraries(${PROJECT_NAME} rc-switch)
