@@ -6,7 +6,7 @@
 //                           +-\/-+
 //          Ain0 (D 5) PB5  1|    |8  Vcc
 //          Ain3 (D 3) PB3  2|    |7  PB2 (D 2) Ain1 -
-// LED +pin Ain2 (D 4) PB4  3|    |6  PB1 (D 1) pwm1 - Shock sensor pin
+// LED +pin Ain2 (D 4) PB4  3|    |6  PB1 (D 1) pwm1 - Sensor pin - active high
 //                     GND  4|    |5  PB0 (D 0) pwm0 - RF433 tx pin
 //
 //
@@ -130,7 +130,7 @@ void setup() {
   pinMode(WAKEUP_PIN, INPUT); // Set the pin to input
   mySwitch.enableTransmit(TX_PIN);
 
-  mySwitch.switchOn('e', 3, 2); // Test Zibase signal id E10
+  blink(10);
 
   lowBattery =
       !(readVcc() >= LOW_BATTERY_LEVEL); // Initialize battery level value
