@@ -123,6 +123,14 @@ include_directories(${RC_SWITCH})
 add_avr_library(rc-switch STATIC "${RC_SWITCH}/RCSwitch.cpp")
 avr_target_link_libraries(rc-switch arduino)
 
+message(STATUS "Zibase(c) signal family: ${SWITCH_FAMILY}" )
+message(STATUS "Zibase(c) signal group:  ${SWITCH_GROUP}"  )
+message(STATUS "Zibase(c) signal number: ${SWITCH_NUMBER}" )
+
+target_compile_definitions(${PROJECT_NAME SWITCH_FAMILY=${SWITCH_FAMILY})
+target_compile_definitions(${PROJECT_NAME SWITCH_GROUP=${SWITCH_GROUP})
+target_compile_definitions(${PROJECT_NAME SWITCH_NUMBER=${SWITCH_NUMBER})
+
 add_avr_executable(${PROJECT_NAME} "${CMAKE_SOURCE_DIR}/src/main.cpp")
 
 avr_target_link_libraries(${PROJECT_NAME} arduino)

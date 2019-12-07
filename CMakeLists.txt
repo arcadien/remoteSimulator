@@ -22,6 +22,11 @@ set(PROJECT_NAME "remoteSimulator")
 
 set(CMAKE_CXX_STANDARD 11)
 
+set(SWITCH_FAMILY "e" CACHE STRING  "Zibase(c) signal family" )
+set(SWITCH_GROUP  3   CACHE INTEGER "Zibase(c) signal group"  )
+set(SWITCH_NUMBER 2   CACHE INTEGER "Zibase(c) signal number" )
+
+
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON ) 
 if( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json" )
   EXECUTE_PROCESS( COMMAND ${CMAKE_COMMAND} -E copy_if_different
