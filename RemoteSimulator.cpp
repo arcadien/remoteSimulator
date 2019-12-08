@@ -13,7 +13,6 @@
 #include <avr/sleep.h>
 #include <avr/wdt.h>
 
-
 #if not defined(SWITCH_FAMILY)
 #define SWITCH_FAMILY 'e'
 #endif
@@ -25,7 +24,6 @@
 #if not defined(SWITCH_NUMBER)
 #define SWITCH_NUMBER 2
 #endif
-
 
 #define RCSwitchDisableReceiving 1
 #include <RCSwitch.h>
@@ -163,12 +161,11 @@ void loop() {
                          // http://www.gammon.com.au/power
 
   if (f_int) {
-    blink(2);
     cli();
 
     // Only send message if pin is high
     if (PINB & 0x2) {
-      // Zibase signal
+      blink(2);
       mySwitch.switchOn(SWITCH_FAMILY, SWITCH_GROUP, SWITCH_NUMBER);
       delay(10);
       mySwitch.switchOn(SWITCH_FAMILY, SWITCH_GROUP, SWITCH_NUMBER);
