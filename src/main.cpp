@@ -5,27 +5,24 @@
 
 //                        +-\/-+
 //            (D 5) PB5  1|    |8  Vcc
-// RF433 tx - (D 3) PB3  2|    |7  PB2 (D 2) - Sensor pin, active high
-// LED +pin - (D 4) PB4  3|    |6  PB1 (D 1) - Serial Rx
-//                  GND  4|    |5  PB0 (D 0) - Serial Tx
+// RF433 TX - (D 3) PB3  2|    |7  PB2 (D 2) - Trigger pin (active low) if USE_LOW_INT0
+// LED +pin - (D 4) PB4  3|    |6  PB1 (D 1) - Trigger pin (active high) if USE_HIGH_PCINT1
+//                  GND  4|    |5  PB0 (D 0) - Serial TX (trace)
 
-#include <TinySoftwareSerial.h>
+#ifndef F_CPU
+#define F_CPU 1000000UL
+#endif
+
 #include <avr/sleep.h>
 #include <avr/wdt.h>
-
-#if not defined(SWITCH_FAMILY)
-#define SWITCH_FAMILY 'e'
-#endif
-
-#if not defined(SWITCH_GROUP)
-#define SWITCH_GROUP 3
-#endif
-
-#if not defined(SWITCH_NUMBER)
-#define SWITCH_NUMBER 2
-#endif
+#include <util/delay.h>
 
 #include <RCSwitch.h>
+#include <TinySoftwareSerial.h>
+
+#if !defined(USE_HIGH_PCINT1) and !defined(USE_LOW_INT0)
+#define USE_LOW_INT0
+#endif
 
 #ifndef cbi
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
@@ -34,9 +31,13 @@
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 #endif
 
+#ifndef bit_is_set
+#define bit_is_set(sfr, bit) (_SFR_BYTE(sfr) & _BV(bit))
+#endif
+
 // Led will flash if battery level is lower than this value
 // in mV.
-#define LOW_BATTERY_LEVEL (3 * 1150)
+#define LOW_BATTERY_LEVEL (2 * 1150)
 
 // wdt is set to 8s, 8x225=1800 seconds = 30 minutes
 #define WDT_COUNT 225
@@ -45,7 +46,6 @@ volatile boolean f_wdt = 0;
 volatile byte count = WDT_COUNT;
 volatile boolean f_int = 0;
 volatile boolean lowBattery = 0;
-volatile boolean switchState = HIGH;
 
 const byte TX_PIN = PB3; // Pin number for the 433mhz OOK transmitter
 const byte LED_PIN = PB4;
@@ -60,9 +60,9 @@ void blink(int blinkCount) {
   pinMode(LED_PIN, OUTPUT);
   for (byte i = blinkCount; i > 0; i--) {
     digitalWrite(LED_PIN, HIGH);
-    delay(50);
+    _delay_ms(100);
     digitalWrite(LED_PIN, LOW);
-    delay(50);
+    _delay_ms(100);
   }
 
   pinMode(LED_PIN, INPUT); // reduce power
@@ -71,8 +71,8 @@ void blink(int blinkCount) {
 void lowBatteryWarning() {
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, HIGH);
-  delay(1); // mS
-  digitalWrite(LED_PIN, LOW);
+  _delay_ms(10);
+
   pinMode(LED_PIN, INPUT);
 }
 
@@ -80,8 +80,8 @@ uint16_t readVcc(void) {
   uint16_t result;
   // Read 1.1V reference against Vcc
   ADMUX = (0 << REFS0) | (12 << MUX0);
-  delay(2);              // Wait for Vref to settle
-  ADCSRA |= (1 << ADSC); // Convert
+  _delay_ms(2);
+  ADCSRA |= (1 << ADSC);
   while (bit_is_set(ADCSRA, ADSC)) {}
   result = ADCW;
   // Back-calculate AVcc in mV
@@ -95,38 +95,36 @@ uint16_t readVcc(void) {
   return millivolts;
 }
 
+void arm_interrupt() {
+  cli();
+#ifdef USE_HIGH_PCINT1
+  // PB1 high using PCINT1
+  sbi(GIMSK, PCIE);
+  sbi(PCMSK, PCINT1);
+#endif
+#ifdef USE_LOW_INT0
+  // PB2 low using INT0
+  sbi(GIMSK, INT0);
+  cbi(MCUCR, ISC00);
+  cbi(MCUCR, ISC01);
+#endif
+  sei();
+}
+
 // set system into the sleep state
 // system wakes up when watchdog times out
 void system_sleep() {
-  cbi(ADCSRA, ADEN);                   // switch Analog to Digitalconverter OFF
+  // switch Analog to Digitalconverter OFF
+  cbi(ADCSRA, ADEN);
   set_sleep_mode(SLEEP_MODE_PWR_DOWN); // sleep mode is set here
-  sleep_enable();
-  sleep_mode();      // System sleeps here
-  sleep_disable();   // System continues execution here when watchdog timed out
-  sbi(ADCSRA, ADEN); // switch Analog to Digitalconverter ON
+  sei();
+  sleep_mode();
+  // switch Analog to Digitalconverter ON
+  sbi(ADCSRA, ADEN);
 }
 
-/*
- * Setup hardware watchdog
- *
- * Values for ii:
- * 0=16ms, 1=32ms,2=64ms,3=128ms,4=250ms,5=500ms
- * 6=1 sec,7=2 sec, 8=4 sec, 9=8sec
- */
-void setup_watchdog(int ii) {
-  byte bb;
-  int ww;
-  if (ii > 9)
-    ii = 9;
-  bb = ii & 7;
-  if (ii > 7)
-    bb |= (1 << 5);
-  bb |= (1 << WDCE);
-  ww = bb;
-  MCUSR &= ~(1 << WDRF);
-  WDTCR |= (1 << WDCE) | (1 << WDE);
-  WDTCR = bb;
-  WDTCR |= _BV(WDIE);
+void setup_watchdog() {
+  WDTCR |= (1 << WDE) | (1 << WDIE) | (1 << WDP3) | (1 << WDP0); // 8s timeout
 }
 
 // Watchdog Interrupt Service / is executed when watchdog timed out
@@ -138,21 +136,29 @@ ISR(WDT_vect) {
   count++;
 }
 
+ISR(BADISR_vect) { blink(20); }
+
+#ifdef USE_HIGH_PCINT1
 ISR(PCINT0_vect) {
-  f_int = true; // set INT flag
+  if (bit_is_set(PINB, PB1)) {
+    cbi(GIMSK, PCIE);
+    f_int = true;
+  }
 }
+#endif
+
+#ifdef USE_LOW_INT0
+ISR(INT0_vect) {
+  cbi(GIMSK, INT0);
+  f_int = true;
+}
+#endif
 
 void setup() {
-  setup_watchdog(9);
+
   pinMode(TX_PIN, OUTPUT);
-  pinMode(WAKEUP_PIN, INPUT); // Set the pin to input
+  pinMode(WAKEUP_PIN, INPUT);
   mySwitch.enableTransmit(TX_PIN);
-
-  blink(10);
-
-  PCMSK |= bit(PCINT1); // set pin change interrupt PB1
-  GIFR |= bit(PCIF);    // clear any outstanding interrupts
-  GIMSK |= bit(PCIE);   // enable pin change interrupts
 
   // UART support, TX only
   // see
@@ -164,36 +170,29 @@ void setup() {
   lowBattery =
       !(readVcc() >= LOW_BATTERY_LEVEL); // Initialize battery level value
 
-  sei();
+  blink(2);
+  setup_watchdog();
 }
 
+/*!
+ * If USE_HIGH_PCINT1, ensure PB3 is high otherwise do not trigger any action
+ */
 void loop() {
-  system_sleep();
-
   if (lowBattery)        // lowBattery is at setup().
     lowBatteryWarning(); // Flash for 1ms every 8s
                          // http://www.gammon.com.au/power
 
   if (f_int) {
-    cli();
+    f_int = false;
+    blink(1);
+    mySwitch.switchOn('e', 3, 2);
+    _delay_ms(100);
 
-    // Only send message if pin is high
-    if (PINB & 0x2) {
-      blink(2);
-      // Zibase signal
-      mySwitch.switchOn(SWITCH_FAMILY, SWITCH_GROUP, SWITCH_NUMBER);
-      delay(10);
-      mySwitch.switchOn('e', 3, 2);
-    }
-
-    f_int = false; // Reset INT Flag
-    sei();
   } else if (f_wdt) {
-    blink(5);
-    cli();
-
-    lowBattery = !(readVcc() >= LOW_BATTERY_LEVEL);
+    lowBattery = (readVcc() <= LOW_BATTERY_LEVEL);
     f_wdt = false;
-    sei();
   }
+  setup_watchdog();
+  arm_interrupt();
+  system_sleep();
 }
