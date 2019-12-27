@@ -3,17 +3,28 @@
 // http://blog.onlinux.fr/detecteur-de-choc-tx-433mhz-pilotes-avec-attiny85/
 //
 
-//                           +-\/-+
-//          Ain0 (D 5) PB5  1|    |8  Vcc
-//          Ain3 (D 3) PB3  2|    |7  PB2 (D 2) Ain1 -
-// LED +pin Ain2 (D 4) PB4  3|    |6  PB1 (D 1) pwm1 - Sensor pin - active high
-//                     GND  4|    |5  PB0 (D 0) pwm0 - RF433 tx pin
-//
-//
+//                        +-\/-+
+//            (D 5) PB5  1|    |8  Vcc
+// RF433 tx - (D 3) PB3  2|    |7  PB2 (D 2) - Sensor pin, active high
+// LED +pin - (D 4) PB4  3|    |6  PB1 (D 1) - Serial Rx
+//                  GND  4|    |5  PB0 (D 0) - Serial Tx
+
+#include <TinySoftwareSerial.h>
 #include <avr/sleep.h>
 #include <avr/wdt.h>
 
-#define RCSwitchDisableReceiving 1
+#if not defined(SWITCH_FAMILY)
+#define SWITCH_FAMILY 'e'
+#endif
+
+#if not defined(SWITCH_GROUP)
+#define SWITCH_GROUP 3
+#endif
+
+#if not defined(SWITCH_NUMBER)
+#define SWITCH_NUMBER 2
+#endif
+
 #include <RCSwitch.h>
 
 #ifndef cbi
@@ -36,9 +47,9 @@ volatile boolean f_int = 0;
 volatile boolean lowBattery = 0;
 volatile boolean switchState = HIGH;
 
-const byte TX_PIN = PB0; // Pin number for the 433mhz OOK transmitter
+const byte TX_PIN = PB3; // Pin number for the 433mhz OOK transmitter
 const byte LED_PIN = PB4;
-const byte WAKEUP_PIN = PB1; // Use pin 1 as wake up pin
+const byte WAKEUP_PIN = PB2;
 
 RCSwitch mySwitch = RCSwitch();
 
@@ -74,7 +85,14 @@ uint16_t readVcc(void) {
   while (bit_is_set(ADCSRA, ADSC)) {}
   result = ADCW;
   // Back-calculate AVcc in mV
-  return 1018500L / result;
+  uint16_t millivolts = 1018500L / result;
+
+  Serial.print("Current Voltage:");
+  float volts = millivolts / 1000;
+  Serial.print(volts);
+  Serial.println("V");
+
+  return millivolts;
 }
 
 // set system into the sleep state
@@ -132,12 +150,20 @@ void setup() {
 
   blink(10);
 
-  lowBattery =
-      !(readVcc() >= LOW_BATTERY_LEVEL); // Initialize battery level value
-
   PCMSK |= bit(PCINT1); // set pin change interrupt PB1
   GIFR |= bit(PCIF);    // clear any outstanding interrupts
   GIMSK |= bit(PCIE);   // enable pin change interrupts
+
+  // UART support, TX only
+  // see
+  // https://github.com/SpenceKonde/ATTinyCore/blob/master/avr/extras/ATtiny_x5.md
+  Serial.begin(9600);
+  ACSR &= ~(1 << ACIE);
+  ACSR |= ~(1 << ACD);
+
+  lowBattery =
+      !(readVcc() >= LOW_BATTERY_LEVEL); // Initialize battery level value
+
   sei();
 }
 
@@ -149,13 +175,13 @@ void loop() {
                          // http://www.gammon.com.au/power
 
   if (f_int) {
-    blink(2);
     cli();
 
     // Only send message if pin is high
     if (PINB & 0x2) {
-      // Zibase signal id E10
-      mySwitch.switchOn('e', 3, 2);
+      blink(2);
+      // Zibase signal
+      mySwitch.switchOn(SWITCH_FAMILY, SWITCH_GROUP, SWITCH_NUMBER);
       delay(10);
       mySwitch.switchOn('e', 3, 2);
     }
@@ -165,6 +191,7 @@ void loop() {
   } else if (f_wdt) {
     blink(5);
     cli();
+
     lowBattery = !(readVcc() >= LOW_BATTERY_LEVEL);
     f_wdt = false;
     sei();
