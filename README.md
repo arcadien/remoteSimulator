@@ -19,12 +19,14 @@ Technical details:
 - Battery level is evaluated comparing Vcc with internal 1V1 reference
 - SoftwareSerial libray is useable for debugging or send serial data on PB0
 
+```
                   +-\/-+
  Reset      PB5  1|    |8  Vcc
  RF433 TX - PB3  2|    |7  PB2 - Trigger pin (active low) if USE_LOW_INT0
  LED +pin - PB4  3|    |6  PB1 - Trigger pin (active high) if USE_HIGH_PCINT1
             GND  4|    |5  PB0 - Serial TX (trace)
- 
+ ``` 
+
 The main source code has been slightly adapted from a version found on [Onlinux.fr](http://blog.onlinux.fr/detecteur-de-choc-tx-433mhz-pilotes-avec-attiny85/)
 
 # Compile the code
