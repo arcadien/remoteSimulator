@@ -18,8 +18,7 @@ rem  along with this program. If not, see <http://www.gnu.org/licenses/>.
 rem 
 rem 
 rem To use this script, Arduino IDE must installed in C:/Program Files (x86)/Arduino/.
-rem If not, change the path of Arduino below. Also, the default target is a Arduino pro micro 
-rem clocked at 16Mhz.
+rem If not, change the path of Arduino below. 
 rem To change these settings, update MCU and BOARD below.
 rem 
 rem Sample call:
@@ -44,4 +43,7 @@ cmake  %1                                                              ^
 -DCMAKE_BUILD_TYPE=Release                                             ^
 -DARDUINO_ROOT:PATH="C:/Program Files (x86)/Arduino/"                  ^
 -DCROSS_FROM_WINDOWS:BOOL=True                                         ^
--DCMAKE_MAKE_PROGRAM:PATH="make"   ^
+-DCMAKE_MAKE_PROGRAM:PATH="make"                                       ^
+-DSWITCH_FAMILY='a'                                                    ^ 
+-DSWITCH_GROUP=1                                                       ^
+-DSWITCH_NUMBER=1
