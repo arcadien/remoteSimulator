@@ -4,9 +4,6 @@
 [submodule "third_party/rc-switch"]
 	path = third_party/rc-switch
 	url = https://github.com/sui77/rc-switch.git
-[submodule "third_party/arduino-core"]
-	path = third_party/arduino-core
-	url = https://github.com/arduino/ArduinoCore-avr.git
-[submodule "third_party/attiny"]
-	path = third_party/attiny
-	url = https://github.com/damellis/attiny.git
+[submodule "third_party/tiny-core"]
+	path = third_party/tiny-core
+	url = https://github.com/SpenceKonde/ATTinyCore.git

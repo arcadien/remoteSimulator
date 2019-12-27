@@ -10,6 +10,20 @@ The goal of this project is to hack a IR detector light, giving it a way to tran
 
 The main source code has been slightly adapted from a version found on [Onlinux.fr](http://blog.onlinux.fr/detecteur-de-choc-tx-433mhz-pilotes-avec-attiny85/)
 
+# Compile the code
+
+The code can be compiled a plain AVR gcc toolchain, using the script in `tools/scripts`. 
+It also can be compiled using the [PlatformIO](https://platformio.org) tool.
+
+## Using CMake
+
+Be sure to clone the repository with its submodules. Then create a build folder in the repo, `cd` to it and type `../tools/scripts/init-avr-linux.sh ..`. After that, the code is ready for compilation. Type `make -j` and gather the .hex files.
+
+## Using PlatformIO
+
+Cloning submodules is not mandatory, you don't even need to install the AVR toolchain. But PlatformIO itself must be installed, using `pip3 install platformIO`.
+Once installed, type `pip3 install platformio`, then `pio run`.
+
 # Links
 We rely on other open source projects, which are:
 * [CMake](https://cmake.org/)
