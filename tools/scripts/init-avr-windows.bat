@@ -31,8 +31,8 @@ rem
 rem ```
 
 set MCU=attiny85
-set BOARD=tiny8
-set CLOCK=8000000U
+set BOARD=tinyX5
+set CLOCK=1000000UL
 
 cmake  %1                                                              ^
 -DCMAKE_TOOLCHAIN_FILE:PATH=%1/third_party/cmake-avr/generic-gcc-avr.cmake ^

@@ -18,7 +18,7 @@
 
 export MCU=attiny85
 export BOARD=tinyX5
-export CLOCK=8000000UL
+export CLOCK=1000000UL
 
 
 cmake  $1 \
@@ -31,6 +31,3 @@ cmake  $1 \
 -DSWITCH_FAMILY='a' \
 -DSWITCH_GROUP=1 \
 -DSWITCH_NUMBER=1
-
-
-
