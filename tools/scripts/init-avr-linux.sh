@@ -18,7 +18,7 @@
 
 export MCU=attiny85
 export BOARD=tinyX5
-export  CLOCK=8000000U
+export CLOCK=8000000UL
 
 
 cmake  $1 \
