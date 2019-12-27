@@ -44,6 +44,6 @@ cmake  %1                                                              ^
 -DARDUINO_ROOT:PATH="C:/Program Files (x86)/Arduino/"                  ^
 -DCROSS_FROM_WINDOWS:BOOL=True                                         ^
 -DCMAKE_MAKE_PROGRAM:PATH="make"                                       ^
--DSWITCH_FAMILY='a'                                                    ^ 
+-DSWITCH_FAMILY='a'                                                    ^
 -DSWITCH_GROUP=1                                                       ^
 -DSWITCH_NUMBER=1
