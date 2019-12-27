@@ -17,7 +17,7 @@
 #
 
 export MCU=attiny85
-export BOARD=tiny8
+export BOARD=tinyX5
 export  CLOCK=8000000U
 
 
