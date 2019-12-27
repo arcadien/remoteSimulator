@@ -1,14 +1,30 @@
-//
-// Original work from:
-// http://blog.onlinux.fr/detecteur-de-choc-tx-433mhz-pilotes-avec-attiny85/
-//
-
-//                        +-\/-+
-//            (D 5) PB5  1|    |8  Vcc
-// RF433 TX - (D 3) PB3  2|    |7  PB2 (D 2) - Trigger pin (active low) if USE_LOW_INT0
-// LED +pin - (D 4) PB4  3|    |6  PB1 (D 1) - Trigger pin (active high) if USE_HIGH_PCINT1
-//                  GND  4|    |5  PB0 (D 0) - Serial TX (trace)
-
+/*
+ * RemoteSimulator
+ *
+ * This firmware allow to trigger the emission of a 433Mhz signal when an event
+ * occurs. The send signal is a on/off signal, so that this firmware is not
+ * suitable for temperature or other discrete data. It is suited for sound,
+ * light or movment detection. The trigger sensor can be active low or high.
+ * Two different definitions are used to select one mode or another.
+ * The firmware also monitors the power level, so that a low battery level will
+ * make the LED signal to blink each 8 seconds, when the MCU wakes up from sleep
+ * mode.
+ *
+ * Technical details:
+ * - The AVR watchdog is used for deep sleep management.
+ * - Battery level is evaluated comparing Vcc with internal 1V1 reference
+ * - SoftwareSerial libray is useable for debugging or send serial data on PB0
+ *
+ *  Original work from:
+ *  http://blog.onlinux.fr/detecteur-de-choc-tx-433mhz-pilotes-avec-attiny85/
+ *
+ *
+ *                  +-\/-+
+ * Reset      PB5  1|    |8  Vcc
+ * RF433 TX - PB3  2|    |7  PB2 - Trigger pin (active low) if USE_LOW_INT0
+ * LED +pin - PB4  3|    |6  PB1 - Trigger pin (active high) if USE_HIGH_PCINT1
+ *            GND  4|    |5  PB0 - Serial TX (trace)
+ */
 #ifndef F_CPU
 #define F_CPU 1000000UL
 #endif
