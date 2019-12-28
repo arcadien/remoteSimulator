@@ -17,7 +17,19 @@ Technical details:
 - Uses CMake or PlatformIO for build
 - The AVR watchdog is used for deep sleep management.
 - Battery level is evaluated comparing Vcc with internal 1V1 reference
-- SoftwareSerial libray is useable for debugging or send serial data on PB0
+- SoftwareSerial libray is useable for debugging or send serial data (9600bps) on PB0
+
+Sample output trace:
+```
+REMOTESIMULATOR
+GIT: bc098ad88e773c9947c5373d6485fa0f6edf0c7ed
+SWITCH_FAMILY: a
+SWITCH_GROUP: 1
+SWITCH_NUMBER: 1
+Current Voltage:5560mV
+Emit signal
+[...]
+```
 
 ```
                   +-\/-+
@@ -26,6 +38,7 @@ Technical details:
  LED +pin - PB4  3|    |6  PB1 - Trigger pin (active high) if USE_HIGH_PCINT1
             GND  4|    |5  PB0 - Serial TX (trace)
  ``` 
+
 
 The main source code has been slightly adapted from a version found on [Onlinux.fr](http://blog.onlinux.fr/detecteur-de-choc-tx-433mhz-pilotes-avec-attiny85/)
 

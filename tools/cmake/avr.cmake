@@ -125,7 +125,8 @@ add_avr_executable(${PROJECT_NAME} "${CMAKE_SOURCE_DIR}/src/main.cpp")
 add_definitions(
   -DSWITCH_FAMILY='${SWITCH_FAMILY}' 
   -DSWITCH_GROUP=${SWITCH_GROUP} 
-  -DSWITCH_NUMBER=${SWITCH_NUMBER})
+  -DSWITCH_NUMBER=${SWITCH_NUMBER}
+  -DGIT_TAG=${GIT_TAG})
 
 avr_target_link_libraries(${PROJECT_NAME} arduino)
 avr_target_link_libraries(${PROJECT_NAME} rc-switch)

@@ -58,10 +58,17 @@
 // wdt is set to 8s, 8x225=1800 seconds = 30 minutes
 #define WDT_COUNT 225
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+#define AT __FILE__ ":" TOSTRING(__LINE__)
+
 volatile boolean f_wdt = 0;
 volatile byte count = WDT_COUNT;
 volatile boolean f_int = 0;
 volatile boolean lowBattery = 0;
+
+// real 1v1 ref value, in mv
+const uint32_t REF_1V1 = 1048;
 
 const byte TX_PIN = PB3; // Pin number for the 433mhz OOK transmitter
 const byte LED_PIN = PB4;
@@ -94,19 +101,27 @@ void lowBatteryWarning() {
 
 uint16_t readVcc(void) {
   uint16_t result;
-  // Read 1.1V reference against Vcc
-  ADMUX = (0 << REFS0) | (12 << MUX0);
+
+  // Use internal 1.1v reference
+  ADMUX = 0;
+  sbi(ADMUX, MUX3);
+  sbi(ADMUX, MUX2);
   _delay_ms(2);
-  ADCSRA |= (1 << ADSC);
-  while (bit_is_set(ADCSRA, ADSC)) {}
-  result = ADCW;
+
+  uint16_t accumulator = 0;
+  for (uint8_t i = 16; i > 0; --i) {
+    sbi(ADCSRA, ADSC);
+    while (bit_is_set(ADCSRA, ADSC)) {}
+    accumulator += ADC;
+  }
+  result = (accumulator >> 4);
+
   // Back-calculate AVcc in mV
-  uint16_t millivolts = 1018500L / result;
+  uint16_t millivolts = ((uint32_t)1024 * REF_1V1) / result;
 
   Serial.print("Current Voltage:");
-  float volts = millivolts / 1000;
-  Serial.print(volts);
-  Serial.println("V");
+  Serial.print(millivolts);
+  Serial.println("mV");
 
   return millivolts;
 }
@@ -183,6 +198,19 @@ void setup() {
   ACSR &= ~(1 << ACIE);
   ACSR |= ~(1 << ACD);
 
+  Serial.println("REMOTESIMULATOR");
+  Serial.print("GIT: ");
+  Serial.println(TOSTRING(GIT_TAG));
+
+  Serial.print("SWITCH_FAMILY: ");
+  Serial.println(*TOSTRING(SWITCH_FAMILY));
+  Serial.print("SWITCH_GROUP: ");
+  Serial.println(SWITCH_GROUP);
+  Serial.print("SWITCH_NUMBER: ");
+  Serial.println(SWITCH_NUMBER);
+
+  _delay_ms(100);
+
   lowBattery =
       !(readVcc() >= LOW_BATTERY_LEVEL); // Initialize battery level value
 
@@ -199,9 +227,10 @@ void loop() {
                          // http://www.gammon.com.au/power
 
   if (f_int) {
+    Serial.println("Emit signal");
     f_int = false;
     blink(1);
-    mySwitch.switchOn('e', 3, 2);
+    mySwitch.switchOn(*TOSTRING(SWITCH_FAMILY), SWITCH_GROUP, SWITCH_NUMBER);
     _delay_ms(100);
 
   } else if (f_wdt) {

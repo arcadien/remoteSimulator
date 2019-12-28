@@ -22,9 +22,9 @@ set(PROJECT_NAME "remoteSimulator")
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(SWITCH_FAMILY "e" CACHE STRING  "Zibase(c) signal family" )
-set(SWITCH_GROUP  3   CACHE INTEGER "Zibase(c) signal group"  )
-set(SWITCH_NUMBER 2   CACHE INTEGER "Zibase(c) signal number" )
+set(SWITCH_FAMILY "a" CACHE STRING  "Zibase(c) signal family" )
+set(SWITCH_GROUP  1   CACHE INTEGER "Zibase(c) signal group"  )
+set(SWITCH_NUMBER 1   CACHE INTEGER "Zibase(c) signal number" )
 
 
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON ) 

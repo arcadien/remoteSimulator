@@ -28,6 +28,7 @@ cmake  $1 \
 -DBOARD_VARIANT=$BOARD \
 -DCMAKE_BUILD_TYPE=Release \
 -DCMAKE_TOOLCHAIN_FILE=$1/third_party/cmake-avr/generic-gcc-avr.cmake \
+-DGIT_TAG=`python git_rev_macro.py` \
 -DSWITCH_FAMILY='a' \
 -DSWITCH_GROUP=1 \
 -DSWITCH_NUMBER=1

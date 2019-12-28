@@ -34,6 +34,7 @@ set MCU=attiny85
 set BOARD=tinyX5
 set CLOCK=1000000UL
 
+FOR /F "usebackq tokens=*" %%a IN (`python ..\git_rev_macro.py`) DO ^
 cmake  %1                                                              ^
 -DCMAKE_TOOLCHAIN_FILE:PATH=%1/third_party/cmake-avr/generic-gcc-avr.cmake ^
 -G "Unix Makefiles"                                                    ^
@@ -46,4 +47,5 @@ cmake  %1                                                              ^
 -DCMAKE_MAKE_PROGRAM:PATH="make"                                       ^
 -DSWITCH_FAMILY='a'                                                    ^
 -DSWITCH_GROUP=1                                                       ^
--DSWITCH_NUMBER=1
+-DSWITCH_NUMBER=1                                                      ^
+-DGIT_TAG= %%a
