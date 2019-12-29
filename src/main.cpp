@@ -29,6 +29,7 @@
 #define F_CPU 1000000UL
 #endif
 
+#include <avr/power.h>
 #include <avr/sleep.h>
 #include <avr/wdt.h>
 #include <util/delay.h>
@@ -51,19 +52,19 @@
 #define bit_is_set(sfr, bit) (_SFR_BYTE(sfr) & _BV(bit))
 #endif
 
-// Led will flash if battery level is lower than this value
-// in mV.
-#define LOW_BATTERY_LEVEL (2 * 1150)
-
-// wdt is set to 8s, 8x225=1800 seconds = 30 minutes
-#define WDT_COUNT 225
-
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 #define AT __FILE__ ":" TOSTRING(__LINE__)
 
+// Led will flash if battery level is lower than this value
+// in mV.
+#define LOW_BATTERY_LEVEL (2 * 1150)
+
+// How many watchdog interrupt before battery sensing
+#define WDT_COUNT_BEFORE_CURRENT_SENSING (3600 / 8)
+volatile uint16_t current_wdt_count = 0;
+
 volatile boolean f_wdt = 0;
-volatile byte count = WDT_COUNT;
 volatile boolean f_int = 0;
 volatile boolean lowBattery = 0;
 
@@ -102,18 +103,27 @@ void lowBatteryWarning() {
 uint16_t readVcc(void) {
   uint16_t result;
 
-  // Use internal 1.1v reference
+  power_adc_enable();
+
   ADMUX = 0;
   sbi(ADMUX, MUX3);
   sbi(ADMUX, MUX2);
+  sbi(ADCSRA, ADEN);
   _delay_ms(2);
 
   uint16_t accumulator = 0;
-  for (uint8_t i = 16; i > 0; --i) {
+
+  // we will discard 10 first reads,
+  // then mean 16 reads
+  for (uint8_t i = (10 + 16); i > 0; --i) {
     sbi(ADCSRA, ADSC);
     while (bit_is_set(ADCSRA, ADSC)) {}
-    accumulator += ADC;
+
+    if (i >= 10) {
+      accumulator += ADC;
+    }
   }
+  // >> 4 is /16
   result = (accumulator >> 4);
 
   // Back-calculate AVcc in mV
@@ -122,6 +132,10 @@ uint16_t readVcc(void) {
   Serial.print("Current Voltage:");
   Serial.print(millivolts);
   Serial.println("mV");
+
+  // switch Analog to Digitalconverter OFF
+  cbi(ADCSRA, ADEN);
+  power_adc_disable();
 
   return millivolts;
 }
@@ -145,26 +159,24 @@ void arm_interrupt() {
 // set system into the sleep state
 // system wakes up when watchdog times out
 void system_sleep() {
-  // switch Analog to Digitalconverter OFF
-  cbi(ADCSRA, ADEN);
   set_sleep_mode(SLEEP_MODE_PWR_DOWN); // sleep mode is set here
   sei();
   sleep_mode();
-  // switch Analog to Digitalconverter ON
-  sbi(ADCSRA, ADEN);
+  sleep_disable();
 }
 
 void setup_watchdog() {
+  wdt_reset();
   WDTCR |= (1 << WDE) | (1 << WDIE) | (1 << WDP3) | (1 << WDP0); // 8s timeout
 }
 
 // Watchdog Interrupt Service / is executed when watchdog timed out
 ISR(WDT_vect) {
-  if (count >= WDT_COUNT) {
+  if (current_wdt_count >= WDT_COUNT_BEFORE_CURRENT_SENSING) {
     f_wdt = true; // set WDTl flag
-    count = 0;
+    current_wdt_count = 0;
   }
-  count++;
+  current_wdt_count++;
 }
 
 ISR(BADISR_vect) { blink(20); }
@@ -190,6 +202,15 @@ void setup() {
   pinMode(TX_PIN, OUTPUT);
   pinMode(WAKEUP_PIN, INPUT);
   mySwitch.enableTransmit(TX_PIN);
+
+  // power_timer0_enable();
+  power_timer0_disable();
+
+  // power_timer1_enable();
+  power_timer1_disable();
+
+  // power_usi_enable();
+  power_usi_disable();
 
   // UART support, TX only
   // see
@@ -222,9 +243,13 @@ void setup() {
  * If USE_HIGH_PCINT1, ensure PB3 is high otherwise do not trigger any action
  */
 void loop() {
-  if (lowBattery)        // lowBattery is at setup().
-    lowBatteryWarning(); // Flash for 1ms every 8s
-                         // http://www.gammon.com.au/power
+
+  if (lowBattery) {
+    // Flash for 1ms every 8s
+    // http://www.gammon.com.au/power
+    lowBatteryWarning();
+    Serial.println("Low battery");
+  }
 
   if (f_int) {
     Serial.println("Emit signal");
@@ -234,10 +259,12 @@ void loop() {
     _delay_ms(100);
 
   } else if (f_wdt) {
+    Serial.println("Current sensing");
     lowBattery = (readVcc() <= LOW_BATTERY_LEVEL);
     f_wdt = false;
   }
   setup_watchdog();
   arm_interrupt();
   system_sleep();
+  Serial.println("Wake up");
 }
