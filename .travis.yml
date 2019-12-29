@@ -5,7 +5,7 @@ language: c++
 dist: bionic
 before_install:
   - sudo apt-get update
-  - sudo apt-get install -y gcovr lcov cmake gcc-avr binutils-avr avr-libc arduino-core
+  - sudo apt-get install -y gcovr lcov cmake gcc-avr binutils-avr avr-libc arduino-core python3-pip
 
 jobs:
   include:
@@ -13,10 +13,9 @@ jobs:
       name: "AVR target"
       compiler: avr-gcc
       script:
-        - mkdir build_avr
-        - cd build_avr
-        - sh ../tools/scripts/init-avr-linux.sh ..
-        - cmake --build .
+        - pip3 install setuptools wheel
+        - pip3 install platformio
+        - pio run
       after_success:
         - bash <(curl -s https://codecov.io/bash)
 cache:
