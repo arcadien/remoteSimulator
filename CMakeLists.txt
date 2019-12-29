@@ -22,10 +22,11 @@ set(PROJECT_NAME "remoteSimulator")
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(SWITCH_FAMILY "a" CACHE STRING  "Zibase(c) signal family" )
-set(SWITCH_GROUP  1   CACHE INTEGER "Zibase(c) signal group"  )
-set(SWITCH_NUMBER 1   CACHE INTEGER "Zibase(c) signal number" )
-
+set(SWITCH_FAMILY "a"                 CACHE STRING  "Zibase(c) signal family"   )
+set(SWITCH_GROUP 1                    CACHE INTEGER "Zibase(c) signal group"    )
+set(SWITCH_NUMBER 1                   CACHE INTEGER "Zibase(c) signal number"   )
+set(LOW_BATTERY_VOLTAGE 4400          CACHE INTEGER "Low battery voltage in mV" )
+set(USE_DOUBLE_TRIGGER_FOR_OFF FALSE  CACHE BOOL    "Use double trigger for 'off' signal")
 
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON ) 
 if( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json" )
