@@ -39,6 +39,7 @@ cmake  %1                                                              ^
 -DCMAKE_TOOLCHAIN_FILE:PATH=%1/third_party/cmake-avr/generic-gcc-avr.cmake ^
 -G "Unix Makefiles"                                                    ^
 -DMCU_SPEED:STRING=%CLOCK%                                             ^
+-DLOW_BATTERY_VOLTAGE=2300                                             ^
 -DAVR_MCU:STRING=%MCU%                                                 ^
 -DBOARD_VARIANT:STRING=%BOARD%                                         ^
 -DCMAKE_BUILD_TYPE=Release                                             ^
@@ -48,4 +49,5 @@ cmake  %1                                                              ^
 -DSWITCH_FAMILY='a'                                                    ^
 -DSWITCH_GROUP=1                                                       ^
 -DSWITCH_NUMBER=1                                                      ^
+-DUSE_DOUBLE_TRIGGER_FOR_OFF:BOOL=TRUE                                 ^
 -DGIT_TAG= %%a

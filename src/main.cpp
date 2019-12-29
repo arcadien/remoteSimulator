@@ -32,7 +32,6 @@
 #include <avr/power.h>
 #include <avr/sleep.h>
 #include <avr/wdt.h>
-#include <util/delay.h>
 
 #include <RCSwitch.h>
 #include <TinySoftwareSerial.h>
@@ -54,11 +53,11 @@
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
-#define AT __FILE__ ":" TOSTRING(__LINE__)
 
-// Led will flash if battery level is lower than this value
-// in mV.
-#define LOW_BATTERY_LEVEL (2 * 1150)
+#ifdef USE_DOUBLE_TRIGGER_FOR_OFF
+bool f_is_first_trigger = true;
+volatile bool f_second_trigger_overtime = false;
+#endif
 
 // How many watchdog interrupt before battery sensing
 #define WDT_COUNT_BEFORE_CURRENT_SENSING (3600 / 8)
@@ -84,9 +83,9 @@ void blink(int blinkCount) {
   pinMode(LED_PIN, OUTPUT);
   for (byte i = blinkCount; i > 0; i--) {
     digitalWrite(LED_PIN, HIGH);
-    _delay_ms(100);
+    delayMicroseconds(100000);
     digitalWrite(LED_PIN, LOW);
-    _delay_ms(100);
+    delayMicroseconds(100000);
   }
 
   pinMode(LED_PIN, INPUT); // reduce power
@@ -95,7 +94,7 @@ void blink(int blinkCount) {
 void lowBatteryWarning() {
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, HIGH);
-  _delay_ms(10);
+  delayMicroseconds(10000);
 
   pinMode(LED_PIN, INPUT);
 }
@@ -109,7 +108,7 @@ uint16_t readVcc(void) {
   sbi(ADMUX, MUX3);
   sbi(ADMUX, MUX2);
   sbi(ADCSRA, ADEN);
-  _delay_ms(2);
+  delayMicroseconds(2000);
 
   uint16_t accumulator = 0;
 
@@ -163,8 +162,15 @@ void system_sleep() {
   sleep_disable();
 }
 
-void setup_watchdog() {
+void setup_watchdog1s() {
   wdt_reset();
+  WDTCR = 0;
+  WDTCR |= (1 << WDE) | (1 << WDIE) | (1 << WDP2) | (1 << WDP1); // 1s timeout
+}
+
+void setup_watchdog8s() {
+  wdt_reset();
+  WDTCR = 0;
   WDTCR |= (1 << WDE) | (1 << WDIE) | (1 << WDP3) | (1 << WDP0); // 8s timeout
 }
 
@@ -175,6 +181,9 @@ ISR(WDT_vect) {
     current_wdt_count = 0;
   }
   current_wdt_count++;
+#ifdef USE_DOUBLE_TRIGGER_FOR_OFF
+  f_second_trigger_overtime = true;
+#endif
 }
 
 ISR(BADISR_vect) { blink(20); }
@@ -195,52 +204,68 @@ ISR(INT0_vect) {
 }
 #endif
 
-void setup() {
-
-  pinMode(TX_PIN, OUTPUT);
-  pinMode(WAKEUP_PIN, INPUT);
-  mySwitch.enableTransmit(TX_PIN);
-
-  // power_timer0_enable();
-  power_timer0_disable();
-
-  // power_timer1_enable();
-  power_timer1_disable();
-
-  // power_usi_enable();
-  power_usi_disable();
-
-  // UART support, TX only
-  // see
-  // https://github.com/SpenceKonde/ATTinyCore/blob/master/avr/extras/ATtiny_x5.md
-  Serial.begin(9600);
-  ACSR &= ~(1 << ACIE);
-  ACSR |= ~(1 << ACD);
-
+void printConfigurationInformations() {
   Serial.println("REMOTESIMULATOR");
   Serial.print("GIT: ");
   Serial.println(TOSTRING(GIT_TAG));
-
   Serial.print("SWITCH_FAMILY: ");
   Serial.println(*TOSTRING(SWITCH_FAMILY));
   Serial.print("SWITCH_GROUP: ");
   Serial.println(SWITCH_GROUP);
   Serial.print("SWITCH_NUMBER: ");
   Serial.println(SWITCH_NUMBER);
+  Serial.print("LOW BATTERY VOLTAGE: ");
+  Serial.println(LOW_BATTERY_VOLTAGE);
+  Serial.print("USE DOUBLE TRIGGER FOR OFF: ");
+  Serial.println(*TOSTRING(USE_DOUBLE_TRIGGER_FOR_OFF));
+  delayMicroseconds(100000);
+}
 
-  _delay_ms(100);
+void setup() {
+  setup_watchdog8s();
+
+  pinMode(TX_PIN, OUTPUT);
+  pinMode(WAKEUP_PIN, INPUT);
+  mySwitch.enableTransmit(TX_PIN);
+
+  // power_timer0_disable();
+  // power_timer1_disable();
+  // power_usi_disable();
+
+  // UART support, TX only. See
+  // https://github.com/SpenceKonde/ATTinyCore/blob/master/avr/extras/ATtiny_x5.md
+  Serial.begin(9600);
+  ACSR &= ~(1 << ACIE);
+  ACSR |= ~(1 << ACD);
+
+  printConfigurationInformations();
 
   lowBattery =
-      !(readVcc() >= LOW_BATTERY_LEVEL); // Initialize battery level value
+      !(readVcc() >= LOW_BATTERY_VOLTAGE); // Initialize battery level value
 
   blink(2);
-  setup_watchdog();
+}
+
+void EmitOnCommand() {
+  Serial.println("Emit On");
+  blink(1);
+  mySwitch.switchOn(*TOSTRING(SWITCH_FAMILY), SWITCH_GROUP, SWITCH_NUMBER);
+  delayMicroseconds(10000);
+}
+
+void EmitOffCommand() {
+  Serial.println("Emit off");
+  blink(2);
+  mySwitch.switchOff(*TOSTRING(SWITCH_FAMILY), SWITCH_GROUP, SWITCH_NUMBER);
+  delayMicroseconds(10000);
 }
 
 /*!
  * If USE_HIGH_PCINT1, ensure PB3 is high otherwise do not trigger any action
  */
 void loop() {
+
+  wdt_reset();
 
   if (lowBattery) {
     // Flash for 1ms every 8s
@@ -249,19 +274,51 @@ void loop() {
     Serial.println("Low battery");
   }
 
+#ifdef USE_DOUBLE_TRIGGER_FOR_OFF
+
+  // 1s watchdog timed out before a second
+  // trigger occurs, send a "ON" command
+  if (!f_is_first_trigger && f_second_trigger_overtime) {
+    Serial.println("overtime");
+    setup_watchdog8s();
+    f_is_first_trigger = true;
+    f_second_trigger_overtime = false;
+    EmitOnCommand();
+  }
+
+#endif
+
   if (f_int) {
-    Serial.println("Emit signal");
     f_int = false;
-    blink(1);
-    mySwitch.switchOn(*TOSTRING(SWITCH_FAMILY), SWITCH_GROUP, SWITCH_NUMBER);
-    _delay_ms(100);
+
+#ifdef USE_DOUBLE_TRIGGER_FOR_OFF
+
+    if (f_is_first_trigger) {
+      Serial.println("First trigger");
+      setup_watchdog1s();
+      delay(100);
+      f_is_first_trigger = false;
+    } else {
+      Serial.println("Second trigger");
+      setup_watchdog8s();
+      f_is_first_trigger = true;
+      f_second_trigger_overtime = false;
+      EmitOffCommand();
+    }
+#else
+    EmitOnCommand();
+    setup_watchdog8s();
+#endif
 
   } else if (f_wdt) {
     Serial.println("Current sensing");
-    lowBattery = (readVcc() <= LOW_BATTERY_LEVEL);
+    lowBattery = (readVcc() <= LOW_BATTERY_VOLTAGE);
     f_wdt = false;
+
+  } else {
+    setup_watchdog8s();
   }
-  setup_watchdog();
+
   arm_interrupt();
   system_sleep();
   Serial.println("Wake up");

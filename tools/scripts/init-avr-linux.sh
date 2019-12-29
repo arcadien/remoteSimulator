@@ -25,10 +25,12 @@ cmake  $1 \
 -G "Unix Makefiles" \
 -DMCU_SPEED=$CLOCK \
 -DAVR_MCU=$MCU \
+-DLOW_BATTERY_VOLTAGE=2300 \
 -DBOARD_VARIANT=$BOARD \
 -DCMAKE_BUILD_TYPE=Release \
 -DCMAKE_TOOLCHAIN_FILE=$1/third_party/cmake-avr/generic-gcc-avr.cmake \
 -DGIT_TAG=`python git_rev_macro.py` \
 -DSWITCH_FAMILY='a' \
 -DSWITCH_GROUP=1 \
+-DUSE_DOUBLE_TRIGGER_FOR_OFF:BOOL=TRUE \
 -DSWITCH_NUMBER=1
