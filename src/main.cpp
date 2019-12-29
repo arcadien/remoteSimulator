@@ -115,16 +115,14 @@ uint16_t readVcc(void) {
 
   // we will discard 10 first reads,
   // then mean 16 reads
-  for (uint8_t i = (10 + 16); i > 0; --i) {
+  for (uint8_t i = 0; i < (10 + 16); ++i) {
     sbi(ADCSRA, ADSC);
     while (bit_is_set(ADCSRA, ADSC)) {}
-
-    if (i >= 10) {
+    if (i > 9) {
       accumulator += ADC;
     }
   }
-  // >> 4 is /16
-  result = (accumulator >> 4);
+  result = (accumulator / 16);
 
   // Back-calculate AVcc in mV
   uint16_t millivolts = ((uint32_t)1024 * REF_1V1) / result;
