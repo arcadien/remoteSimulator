@@ -6,8 +6,7 @@ This firmware allow to trigger the emission of a 433Mhz signal when a 'trigger e
 The sent signal is a `on` or `off` signal, so that this firmware is not suitable for temperature or other discrete data. 
 It is suited for something like sound, light or motion detection.
 The trigger sensor can be active low or high, two different build options and two pins are used to select one mode or another.
-The firmware also monitors the power level, so that a low battery level will make the LED to quickly blink each 8 seconds.
-By defaut, the battery voltage is sent at regular interval (1 hour by default) to allow device monitoring. The voltage is sent using X10 protocol.
+The firmware also monitors the power level.
 
 Technical details:
 - Written for ATTiny85
@@ -17,6 +16,9 @@ Technical details:
 - SoftwareSerial libray is useable for debugging or send serial data (9600 bauds/s) on `PB0`
 - Double trigger for 'off' signal is a build parameter. It allows to clap one time for `on` and two times for `off`. The delay between two triggers is 1 second.
 - Detail of on/off signals are build parameters (using [RC-Switch](https://github.com/sui77/rc-switch) `Type C Intertechno`)
+- The battery voltage is sent at regular interval (1 hour by default)
+- The battery voltage is sent using [X10](https://en.wikipedia.org/wiki/X10_(industry_standard)) protocol
+- A low battery level will make the LED to quickly blink each 8 seconds.
 
 Sample output trace:
 ```
