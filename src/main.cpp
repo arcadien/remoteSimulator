@@ -77,7 +77,7 @@ const byte WAKEUP_PIN = PB2;
 RCSwitch mySwitch = RCSwitch();
 
 #define COMMAND_REPEAT_COUNT 3
-#define rfxSensorID 14
+#define rfxSensorID 0x0E 
 x10rf x10 = x10rf(TX_PIN, 0, COMMAND_REPEAT_COUNT);
 
 /*
@@ -333,7 +333,7 @@ void loop() {
   } else {
     setup_watchdog8s();
   }
-
+  
   arm_interrupt();
   system_sleep();
   Serial.println("Wake up");
