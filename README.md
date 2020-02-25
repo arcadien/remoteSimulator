@@ -12,7 +12,7 @@ The firmware also monitors the power level, so that a low battery level will mak
 
 Technical details:
 - Written for ATTiny85
-- Uses CMake or PlatformIO for build
+- Uses PlatformIO for build
 - The AVR watchdog is used for deep sleep management
 - Battery level is evaluated comparing Vcc with internal 1V1 reference, and low battery voltage is a build parameter (platformio.ini or CMake definition)
 - SoftwareSerial libray is useable for debugging or send serial data (9600bps) on PB0
@@ -46,16 +46,9 @@ The main source code has been slightly adapted from a version found on [Onlinux.
 
 # Compile the code
 
-The code can be compiled a plain AVR gcc toolchain, using the script in `tools/scripts`. Note that these script will use parameters which may not be suitable for all usages.
-It also can be compiled using the [PlatformIO](https://platformio.org) tool.
-
-## Using CMake
-
-Be sure to clone the repository with its submodules. Then create a build folder in the repo, `cd` to it and type `../tools/scripts/init-avr-linux.sh ..`. After that, the code is ready for compilation. Type `make -j` and gather the .hex files.
-
 ## Using PlatformIO
 
-Cloning submodules is not mandatory, you don't even need to install the AVR toolchain. But PlatformIO itself must be installed, using `pip3 install platformIO`.
+PlatformIO itself must be installed, using `pip3 install platformIO`.
 Once installed, type `pip3 install platformio`, then `pio run`.
 
 # Links
