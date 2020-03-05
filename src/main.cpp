@@ -60,7 +60,7 @@ volatile bool f_second_trigger_overtime = false;
 #endif
 
 // How many watchdog interrupt before battery sensing
-#define WDT_COUNT_BEFORE_CURRENT_SENSING (3600 / 8)
+#define WDT_COUNT_BEFORE_CURRENT_SENSING 8 // each 64 seconds (3600 / 8)
 volatile uint16_t current_wdt_count = 0;
 
 volatile boolean f_wdt = 0;
@@ -329,6 +329,7 @@ void loop() {
     x10.RFXmeter(rfxSensorID, 0, rawBattery);
     digitalWrite(LED_PIN, LOW);
     f_wdt = false;
+    setup_watchdog8s();
 
   } else {
     setup_watchdog8s();
