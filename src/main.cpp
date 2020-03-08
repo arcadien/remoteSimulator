@@ -32,7 +32,7 @@
 #include <avr/power.h>
 #include <avr/sleep.h>
 #include <avr/wdt.h>
-
+#include <x10rf.h>
 #include <RCSwitch.h>
 #include <TinySoftwareSerial.h>
 
@@ -60,7 +60,7 @@ volatile bool f_second_trigger_overtime = false;
 #endif
 
 // How many watchdog interrupt before battery sensing
-#define WDT_COUNT_BEFORE_CURRENT_SENSING (3600 / 8)
+#define WDT_COUNT_BEFORE_CURRENT_SENSING 8 // each 64 seconds (3600 / 8)
 volatile uint16_t current_wdt_count = 0;
 
 volatile boolean f_wdt = 0;
@@ -76,6 +76,10 @@ const byte WAKEUP_PIN = PB2;
 
 RCSwitch mySwitch = RCSwitch();
 
+#define COMMAND_REPEAT_COUNT 3
+#define rfxSensorID 0x0E 
+x10rf x10 = x10rf(TX_PIN, 0, COMMAND_REPEAT_COUNT);
+
 /*
  * Blink led at LED_PIN `blinkCount` times
  */
@@ -87,9 +91,8 @@ void blink(int blinkCount) {
     digitalWrite(LED_PIN, LOW);
     delayMicroseconds(100000);
   }
-
-  pinMode(LED_PIN, INPUT); // reduce power
 }
+
 
 void lowBatteryWarning() {
   pinMode(LED_PIN, OUTPUT);
@@ -99,7 +102,7 @@ void lowBatteryWarning() {
   pinMode(LED_PIN, INPUT);
 }
 
-uint16_t readVcc(void) {
+long readVcc(void) {
   uint16_t result;
 
   power_adc_enable();
@@ -124,7 +127,7 @@ uint16_t readVcc(void) {
   result = (accumulator / 16);
 
   // Back-calculate AVcc in mV
-  uint16_t millivolts = ((uint32_t)1024 * REF_1V1) / result;
+  long millivolts = ((uint32_t)(1024 * REF_1V1)) / result;
 
   Serial.print("Current Voltage:");
   Serial.print(millivolts);
@@ -218,6 +221,9 @@ void printConfigurationInformations() {
   Serial.println(LOW_BATTERY_VOLTAGE);
   Serial.print("USE DOUBLE TRIGGER FOR OFF: ");
   Serial.println(*TOSTRING(USE_DOUBLE_TRIGGER_FOR_OFF));
+  Serial.print("rfxSensorID:");
+  Serial.println(rfxSensorID);
+
   delayMicroseconds(100000);
 }
 
@@ -249,14 +255,18 @@ void setup() {
 void EmitOnCommand() {
   Serial.println("Emit On");
   blink(1);
+  digitalWrite(LED_PIN, HIGH);
   mySwitch.switchOn(*TOSTRING(SWITCH_FAMILY), SWITCH_GROUP, SWITCH_NUMBER);
+  digitalWrite(LED_PIN, LOW);
   delayMicroseconds(10000);
 }
 
 void EmitOffCommand() {
   Serial.println("Emit off");
   blink(2);
+  digitalWrite(LED_PIN, HIGH);
   mySwitch.switchOff(*TOSTRING(SWITCH_FAMILY), SWITCH_GROUP, SWITCH_NUMBER);
+  digitalWrite(LED_PIN, LOW);
   delayMicroseconds(10000);
 }
 
@@ -312,13 +322,19 @@ void loop() {
 
   } else if (f_wdt) {
     Serial.println("Current sensing");
-    lowBattery = (readVcc() <= LOW_BATTERY_VOLTAGE);
+    long rawBattery = readVcc();
+    
+    lowBattery = (rawBattery <= LOW_BATTERY_VOLTAGE);
+    digitalWrite(LED_PIN, HIGH);
+    x10.RFXmeter(rfxSensorID, 0, rawBattery);
+    digitalWrite(LED_PIN, LOW);
     f_wdt = false;
+    setup_watchdog8s();
 
   } else {
     setup_watchdog8s();
   }
-
+  
   arm_interrupt();
   system_sleep();
   Serial.println("Wake up");
