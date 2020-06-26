@@ -13,7 +13,7 @@
  * Technical details:
  * - The AVR watchdog is used for deep sleep management.
  * - Battery level is evaluated comparing Vcc with internal 1V1 reference
- * - SoftwareSerial libray is useable for debugging or send serial data on PB0
+ * - SoftwareSerial library is useable for debugging or send serial data on PB0
  *
  *  Original work from:
  *  http://blog.onlinux.fr/detecteur-de-choc-tx-433mhz-pilotes-avec-attiny85/
@@ -32,6 +32,7 @@
 #include <avr/power.h>
 #include <avr/sleep.h>
 #include <avr/wdt.h>
+#include <util/delay.h>
 
 #include <RCSwitch.h>
 #include <TinySoftwareSerial.h>
@@ -83,20 +84,16 @@ void blink(int blinkCount) {
   pinMode(LED_PIN, OUTPUT);
   for (byte i = blinkCount; i > 0; i--) {
     digitalWrite(LED_PIN, HIGH);
-    delayMicroseconds(100000);
+    _delay_ms(100);
     digitalWrite(LED_PIN, LOW);
-    delayMicroseconds(100000);
+    _delay_ms(100);
   }
 
   pinMode(LED_PIN, INPUT); // reduce power
 }
 
 void lowBatteryWarning() {
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, HIGH);
-  delayMicroseconds(10000);
-
-  pinMode(LED_PIN, INPUT);
+  blink(4);
 }
 
 uint16_t readVcc(void) {
